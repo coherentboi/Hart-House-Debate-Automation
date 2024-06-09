@@ -71,7 +71,6 @@ def append_data_to_sheet(service, spreadsheet_id, sheet_name, data):
             body=value_range_body
         )
         response = request.execute()
-        print(response)
     else:
         print("Duplicate entry. Not adding to sheet.")
 
