@@ -38,4 +38,40 @@ def read_pdf(file_path):
         
         return data
 
+def process_files(driveService, link_col, row):
+    
+    filename = 'output.pdf'
+    download_pdf(driveService, row[link_col], filename)
+    return read_pdf(filename)
+
+def fetch_existing_data(service, spreadsheet_id, sheet_name):
+    range_name = f"{sheet_name}!A1:ZZ"  # Adjust range as needed
+    result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
+    values = result.get('values', [])
+    return values
+
+def check_duplicates(new_data, existing_data):
+    return new_data in existing_data
+
+def append_data_to_sheet(service, spreadsheet_id, sheet_name, data):
+    existing_data = fetch_existing_data(service, spreadsheet_id, sheet_name)
+    if not check_duplicates(data, existing_data):
+        range_name = f"{sheet_name}!A1"  # Starting point for the append
+        value_input_option = 'USER_ENTERED'
+        insert_data_option = 'INSERT_ROWS'
+        value_range_body = {
+            "majorDimension": "ROWS",
+            "values": [data]
+        }
+        request = service.spreadsheets().values().append(
+            spreadsheetId=spreadsheet_id,
+            range=range_name,
+            valueInputOption=value_input_option,
+            insertDataOption=insert_data_option,
+            body=value_range_body
+        )
+        response = request.execute()
+        print(response)
+    else:
+        print("Duplicate entry. Not adding to sheet.")
 

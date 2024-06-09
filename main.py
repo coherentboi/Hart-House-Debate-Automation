@@ -8,12 +8,10 @@ from dotenv import load_dotenv
 from summersplit2024 import check_files
 
 # If modifying these scopes, delete the file token.json.
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly', 'https://www.googleapis.com/auth/drive.readonly']
+SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive.readonly']
 
 # Load the environment variables from .env file
 load_dotenv()
-
-
 
 def read_sheet(service, spreadsheet_id, range_name):
     # Call the Sheets API to fetch the data
@@ -60,7 +58,7 @@ def main():
 
     data = read_sheet(sheetsService, spreadsheet_id, 'Form Responses 1!A1:ZZ')
 
-    check_files(driveService, data)
+    check_files(sheetsService, spreadsheet_id, driveService, data)
 
 if __name__ == '__main__':
     main()
