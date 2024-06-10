@@ -2,8 +2,6 @@ from util import connect, read_sheet, check_payment, check_manual
 
 from summersplit2024 import spreadsheet_id
 
-
-
 def main():
     
     driveService, sheetsService = connect()

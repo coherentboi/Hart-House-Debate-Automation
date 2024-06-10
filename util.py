@@ -123,10 +123,10 @@ def check_payment(sheetsService, spreadsheet_id, driveService, data):
         try:
             pdfData = process_files(driveService, link_col, row)
 
-            """if(TOURNAMENTNAME not in pdfData):
+            if(TOURNAMENTNAME.lower() not in pdfData.lower()):
                 print("Tournament names don't match")
                 append_data_to_sheet(sheetsService, spreadsheet_id, "Review Payment", row)
-                continue"""
+                continue
 
             if(row[data[0].index(NAME)].lower() not in pdfData.lower()):
                 print("Names don't match")
@@ -180,5 +180,12 @@ def check_manual(sheetsService, spreadsheet_id, data):
     green_rows = get_cell_background_color(sheetsService, spreadsheet_id, "Review Payment", f"A2:A{len(data) + 1}", {'green': 1} )
     for index, green in enumerate(green_rows):
         if(green):
+            print(f"Adding row {index} to processed payments")
             append_data_to_sheet(sheetsService, spreadsheet_id, "Payment Processed", data[index])
-            print(f"Added row {index} to processed payments")
+            
+    red_rows = get_cell_background_color(sheetsService, spreadsheet_id, "Review Payment", f"A2:A{len(data) + 1}", {'red': 1} )
+    for index, red in enumerate(red_rows):
+        if(red):
+            print(f"Adding row {index} to failed payments")
+            append_data_to_sheet(sheetsService, spreadsheet_id, "Payment Failed", data[index])
+            
