@@ -189,3 +189,11 @@ def check_manual(sheetsService, spreadsheet_id, data):
             print(f"Adding row {index} to failed payments")
             append_data_to_sheet(sheetsService, spreadsheet_id, "Payment Failed", data[index])
             
+def organize_debaters(sheetsService, spreadsheet_id, data):
+    ANameList = []
+    AEmailList = []
+    APhoneList = []
+    ALevelList = []
+    BList = []
+    
+        
