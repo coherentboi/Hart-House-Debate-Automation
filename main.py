@@ -18,8 +18,7 @@ def main():
 
     organize_debaters(sheetsService, spreadsheet_id, processed_payments)
 
-    print(processed_payments)
-
+    debater_information = read_sheet(sheetsService, spreadsheet_id, 'Debater Information!A1:ZZ')
 
 if __name__ == '__main__':
     main()

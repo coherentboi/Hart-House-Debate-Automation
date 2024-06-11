@@ -7,7 +7,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 import PyPDF2
 
-from summersplit2024 import TOURNAMENTNAME, NAME, EMAIL, PDFCHECKMESSAGE
+from summersplit2024 import TOURNAMENTNAME, NAME, EMAIL, PDFCHECKMESSAGE, debater_a_name_format, debater_a_email_format, debater_a_level_format, debater_b_email_format, debater_b_level_format, debater_b_name_format, institution_format
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive.readonly']
@@ -190,10 +190,41 @@ def check_manual(sheetsService, spreadsheet_id, data):
             append_data_to_sheet(sheetsService, spreadsheet_id, "Payment Failed", data[index])
             
 def organize_debaters(sheetsService, spreadsheet_id, data):
+    institutionIndex = data[0].index(institution_format)
     ANameList = []
     AEmailList = []
-    APhoneList = []
     ALevelList = []
-    BList = []
-    
+    BNameList = []
+    BEmailList = []
+    BLevelList = []
+    for i in range(10):
+        for index, cell in enumerate(data[0]):
+            if(cell == debater_a_name_format.format(i)):
+                ANameList.append(index)
+            elif(cell == debater_a_email_format.format(i)):
+                AEmailList.append(index)
+            elif(cell == debater_a_level_format.format(i)):
+                ALevelList.append(index)
+            elif(cell == debater_b_name_format.format(i)):
+                BNameList.append(index)
+            elif(cell == debater_b_email_format.format(i)):
+                BEmailList.append(index)
+            elif(cell == debater_b_level_format.format(i)):
+                BLevelList.append(index)
+    for row in data[1:]:
+        for index in range(len(ANameList)):
+            inputRow = [row[institutionIndex]]
+            if(row[ANameList[index]] == ""):
+                continue
+            inputRow.append(row[ANameList[index]])
+            inputRow.append(row[AEmailList[index]])
+            inputRow.append(row[ALevelList[index]])
+            inputRow.append(row[BNameList[index]])
+            inputRow.append(row[BEmailList[index]])
+            inputRow.append(row[BLevelList[index]])
+            print(f"Adding {row[ANameList[index]]} and {row[BNameList[index]]} to Debater Information")
+            append_data_to_sheet(sheetsService, spreadsheet_id, "Debater Information", inputRow)
+
+            
+
         
