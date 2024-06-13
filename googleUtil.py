@@ -119,7 +119,8 @@ def append_data_to_sheet(service, spreadsheet_id, sheet_name, data):
 
 def check_payment(sheetsService, spreadsheet_id, driveService, data):
     link_col = data[0].index(PDFCHECKMESSAGE)
-    for row in data[1:]:
+    for index, row in enumerate(data[1:]):
+        print(f"Processing row {index + 1}")
         try:
             pdfData = process_files(driveService, link_col, row)
 
