@@ -1,10 +1,11 @@
 from googleUtil import connect, read_sheet, check_payment, check_manual, organize_debaters
+from tabbycatUtil import create_teams, get_break_categories, get_institutions, get_speaker_categories, get_teams
 
 from util import intInput, clear, enter
 
 from summersplit2024 import spreadsheet_id
 
-options = ["Check Payment", "Transfer Manually Reviewed Payment", "Organize Debaters", "Get TabbyCat Information", "Exit"]
+options = ["Check Payment", "Transfer Manually Reviewed Payment", "Organize Debaters", "Get TabbyCat Information", "Create Teams","Exit"]
 
 def main():
     
@@ -32,6 +33,18 @@ def main():
             processed_payments = read_sheet(sheetsService, spreadsheet_id, 'Payment Processed!A1:ZZ')
             organize_debaters(sheetsService, spreadsheet_id, processed_payments)
             print("Compiled Debater Information")
+            enter()
+        elif(userChoice == 4):
+            get_institutions()
+            get_break_categories()
+            get_speaker_categories()
+            get_teams()
+            print("Tabbycat Information Extracted")
+            enter()
+        elif(userChoice == 5):
+            debater_information = read_sheet(sheetsService, spreadsheet_id, "Debater Information!A1:ZZ")
+            team_names = read_sheet(sheetsService, spreadsheet_id, 'Team Names!A1:ZZ')
+            create_teams(debater_information, team_names)
             enter()
         else:
             break

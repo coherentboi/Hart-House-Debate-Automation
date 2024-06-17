@@ -43,6 +43,7 @@ def read_sheet(service, spreadsheet_id, range_name):
 
     if not values:
         print('No data found.')
+        return []
     else:
         return values
 
