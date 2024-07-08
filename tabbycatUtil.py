@@ -71,9 +71,9 @@ def create_team(data):
 def create_speaker(data):
     response = requests.post(tabs_link+f"/tournaments/{tournament_slug}/speakers", headers=headers, data=json.dumps(data))
     if(response.status_code == 200 or response.status_code == 201):
-        print(f"Speaker {data['name']} Created Successfully")
+        print(f"Speaker {data['name'].title()} Created Successfully")
     else:
-        print(f"Speaker {data['name']} Creation Failed", response.status_code, response.json())
+        print(f"Speaker {data['name'].title()} Creation Failed", response.status_code, response.json())
 
 def create_institution(data):
     response = requests.post(tabs_link+f"/institutions", headers=headers, data=json.dumps(data))
@@ -108,8 +108,8 @@ def create_teams(team_data, team_names):
         if team_info == False:
             continue
         
-        speaker_a_data = {"name": team[debater_a_column], "email": team[email_a_column], "team": team_info["url"], "categories": configure_speaker_categories(team[level_a_column])}
-        speaker_b_data = {"name": team[debater_b_column], "email": team[email_b_column], "team": team_info["url"], "categories": configure_speaker_categories(team[level_b_column])}
+        speaker_a_data = {"name": team[debater_a_column].title(), "email": team[email_a_column], "team": team_info["url"], "categories": configure_speaker_categories(team[level_a_column])}
+        speaker_b_data = {"name": team[debater_b_column].title(), "email": team[email_b_column], "team": team_info["url"], "categories": configure_speaker_categories(team[level_b_column])}
 
         create_speaker(speaker_a_data)
         create_speaker(speaker_b_data)

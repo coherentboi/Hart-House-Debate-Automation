@@ -16,7 +16,10 @@ def intInput(message, lowerBound = 0, upperBound = 999999999999):
         print("Invalid Input. Please Try Again")
 
 def clear():
-    os.system("clear")
+    # Mac
+    #os.system("clear")
+    # Windows
+    os.system("cls")
 
 def enter():
     input("Press Enter To Continue")
