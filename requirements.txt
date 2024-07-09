@@ -4,3 +4,4 @@ google-auth-oauthlib
 PyPDF2
 requests
 python-dotenv
+google-cloud-vision

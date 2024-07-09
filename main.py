@@ -9,7 +9,7 @@ options = ["Check Payment", "Transfer Manually Reviewed Payment", "Organize Deba
 
 def main():
     
-    driveService, sheetsService = connect()
+    driveService, sheetsService, visionClient = connect()
 
     while(True):
         print("Welcome to the Hart House Debate Club Tournament Automation Software!\n")
@@ -21,7 +21,7 @@ def main():
         clear()
         if(userChoice == 1):
             formResponseData = read_sheet(sheetsService, spreadsheet_id, 'Form Responses 1!A1:ZZ')
-            check_payment(sheetsService, spreadsheet_id, driveService, formResponseData)
+            check_payment(sheetsService, spreadsheet_id, driveService, visionClient, formResponseData)
             print("Checking Payment Completed")
             enter()
         elif(userChoice == 2):

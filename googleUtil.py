@@ -1,5 +1,7 @@
 import os
 import io
+from google.cloud import vision
+from google.cloud.vision_v1 import types
 from googleapiclient.http import MediaIoBaseDownload
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -10,7 +12,7 @@ import PyPDF2
 from summersplit2024 import TOURNAMENTNAME, NAME, EMAIL, PDFCHECKMESSAGE, debater_a_name_format, debater_a_email_format, debater_a_level_format, debater_b_email_format, debater_b_level_format, debater_b_name_format, institution_format
 
 # If modifying these scopes, delete the file token.json.
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive.readonly']
+SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive.readonly', 'https://www.googleapis.com/auth/cloud-platform']
 
 def connect():
     """Shows basic usage of the Sheets API."""
@@ -32,8 +34,9 @@ def connect():
         with open('token.json', 'w') as token:
             token.write(creds.to_json())
 
+    visionClient = vision.ImageAnnotatorClient(credentials=creds)
     
-    return build('drive', 'v3', credentials=creds), build('sheets', 'v4', credentials=creds)
+    return build('drive', 'v3', credentials=creds), build('sheets', 'v4', credentials=creds), visionClient
 
 def read_sheet(service, spreadsheet_id, range_name):
     # Call the Sheets API to fetch the data
@@ -62,10 +65,54 @@ def download_pdf(driveService, url, filename):
         print("Download %d%%." % int(status.progress() * 100))
 
     # Save the PDF locally
-    with open('output.pdf', 'wb') as f:
+    with open(filename, 'wb') as f:
         fh.seek(0)
         f.write(fh.read())
 
+def download_image(driveService, url, filename):
+
+    if(os.path.exists(filename)):
+        os.remove(filename)
+
+    file_id = url.split("id=")[1]
+
+    request = driveService.files().get_media(fileId=file_id)
+
+    fh = io.BytesIO()
+
+    downloader = MediaIoBaseDownload(fh, request)
+
+    done = False
+    while not done:
+        status, done = downloader.next_chunk()
+        print("Download %d%%." % int(status.progress() * 100))
+    
+    with open(filename, 'wb') as f:
+        fh.seek(0)
+        f.write(fh.read())
+        
+    print(f"File {filename} downloaded successfully.")
+
+def read_image(file_path, visionClient):
+
+    with open(file_path, 'rb') as image_file:
+        content = image_file.read()
+
+    image = vision.Image(content=content)
+
+    response = visionClient.text_detection(image=image)
+
+    texts = response.text_annotations
+
+    if texts:
+        # Compile all detected texts into a single string
+        compiled_text = " ".join([text.description for text in texts])
+        
+        print('Compiled Text:')
+    else:
+        print('No text detected.')
+
+    return compiled_text
 
 def read_pdf(file_path):
     # Open the PDF file
@@ -87,6 +134,12 @@ def process_files(driveService, link_col, row):
     filename = 'output.pdf'
     download_pdf(driveService, row[link_col], filename)
     return read_pdf(filename)
+
+def process_image(visionClient, driveService, link_col, row):
+    
+    filename = 'output.png'
+    download_image(driveService, row[link_col], filename)
+    return read_image(filename, visionClient)
 
 def fetch_existing_data(service, spreadsheet_id, sheet_name):
     range_name = f"{sheet_name}!A1:ZZ"  # Adjust range as needed
@@ -118,12 +171,12 @@ def append_data_to_sheet(service, spreadsheet_id, sheet_name, data):
     else:
         print("Duplicate entry. Not adding to sheet.")
 
-def check_payment(sheetsService, spreadsheet_id, driveService, data):
+def check_payment(sheetsService, spreadsheet_id, driveService, visionClient, data):
     link_col = data[0].index(PDFCHECKMESSAGE)
     for index, row in enumerate(data[1:]):
         print(f"Processing row {index + 1}")
         try:
-            pdfData = process_files(driveService, link_col, row)
+            pdfData = process_files(driveService, link_col, row).lower().replace(" ", "")
 
             if(TOURNAMENTNAME.lower() not in pdfData.lower()):
                 print("Tournament names don't match")
@@ -141,9 +194,15 @@ def check_payment(sheetsService, spreadsheet_id, driveService, data):
                 continue
             
         except:
-            print("PDF Processing Failed")
-            append_data_to_sheet(sheetsService, spreadsheet_id, "Review Payment", row)
-            continue
+            
+            try:
+                print("PDF Processing Failed, Attempting To Process Image")
+                process_image(visionClient, driveService, link_col, row).lower().replace(" ", "")
+
+            except:
+                print("Image Processing Failed, Manual Inspection Required")
+                append_data_to_sheet(sheetsService, spreadsheet_id, "Review Payment", row)
+                continue
 
         append_data_to_sheet(sheetsService, spreadsheet_id, "Payment Processed", row)
 
