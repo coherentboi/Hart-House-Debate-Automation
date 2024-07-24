@@ -9,7 +9,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 import PyPDF2
 
-from summersplit2024 import TOURNAMENTNAME, NAME, EMAIL, PDFCHECKMESSAGE, debater_a_name_format, debater_a_email_format, debater_a_level_format, debater_b_email_format, debater_b_level_format, debater_b_name_format, institution_format
+from summersplit2024 import PDFCHECKMESSAGE, debater_a_name_format, debater_a_email_format, debater_a_level_format, debater_b_email_format, debater_b_level_format, debater_b_name_format, institution_format, accessibility_requirements
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive.readonly', 'https://www.googleapis.com/auth/cloud-platform']
@@ -177,28 +177,13 @@ def check_payment(sheetsService, spreadsheet_id, driveService, visionClient, dat
         print(f"Processing row {index + 1}")
         try:
             pdfData = process_files(driveService, link_col, row).lower().replace(" ", "")
-
-            if(TOURNAMENTNAME.lower() not in pdfData.lower()):
-                print("Tournament names don't match")
-                append_data_to_sheet(sheetsService, spreadsheet_id, "Review Payment", row)
-                continue
-
-            if(row[data[0].index(NAME)].lower() not in pdfData.lower()):
-                print("Names don't match")
-                append_data_to_sheet(sheetsService, spreadsheet_id, "Review Payment", row)
-                continue
-
-            if(row[data[0].index(EMAIL)].lower() not in pdfData.lower()):
-                print("Emails don't match")
-                append_data_to_sheet(sheetsService, spreadsheet_id, "Review Payment", row)
-                continue
             
         except:
             
             try:
                 print("PDF Processing Failed, Attempting To Process Image")
-                process_image(visionClient, driveService, link_col, row).lower().replace(" ", "")
-
+                imageData = process_image(visionClient, driveService, link_col, row).lower().replace(" ", "")
+            
             except:
                 print("Image Processing Failed, Manual Inspection Required")
                 append_data_to_sheet(sheetsService, spreadsheet_id, "Review Payment", row)
@@ -258,23 +243,27 @@ def organize_debaters(sheetsService, spreadsheet_id, data):
     BNameList = []
     BEmailList = []
     BLevelList = []
-    for i in range(10):
+    AccessibilityList  = []
+    for i in range(1, 10):
         for index, cell in enumerate(data[0]):
-            if(cell == debater_a_name_format.format(i)):
+            if(cell.strip() == debater_a_name_format.format(i).strip()):
                 ANameList.append(index)
-            elif(cell == debater_a_email_format.format(i)):
+            elif(cell.strip() == debater_a_email_format.format(i).strip()):
                 AEmailList.append(index)
-            elif(cell == debater_a_level_format.format(i)):
+            elif(cell.strip() == debater_a_level_format.format(i).strip()):
                 ALevelList.append(index)
-            elif(cell == debater_b_name_format.format(i)):
+            elif(cell.strip() == debater_b_name_format.format(i).strip()):
                 BNameList.append(index)
-            elif(cell == debater_b_email_format.format(i)):
+            elif(cell.strip() == debater_b_email_format.format(i).strip()):
                 BEmailList.append(index)
-            elif(cell == debater_b_level_format.format(i)):
+            elif(cell.strip() == debater_b_level_format.format(i).strip()):
                 BLevelList.append(index)
+            elif(cell.strip() == accessibility_requirements.format(i).strip()):
+                AccessibilityList.append(index)
     for row in data[1:]:
         for index in range(len(ANameList)):
             inputRow = [row[institutionIndex]]
+            accessibilityRow = []
             if(row[ANameList[index]] == ""):
                 continue
             inputRow.append(row[ANameList[index]])
@@ -283,8 +272,13 @@ def organize_debaters(sheetsService, spreadsheet_id, data):
             inputRow.append(row[BNameList[index]])
             inputRow.append(row[BEmailList[index]])
             inputRow.append(row[BLevelList[index]])
+            accessibilityRow.append(row[ANameList[index]].strip() + ", " + row[BNameList[index]].strip())
+            accessibilityRow.append(row[AccessibilityList[index]])
             print(f"Adding {row[ANameList[index]]} and {row[BNameList[index]]} to Debater Information")
             append_data_to_sheet(sheetsService, spreadsheet_id, "Debater Information", inputRow)
+            if row[AccessibilityList[index]] != "" and row[AccessibilityList[index]].lower().strip() != "none" and row[AccessibilityList[index]].lower().strip() != "n/a":
+                print(f"Adding {row[ANameList[index]]} and {row[BNameList[index]]} to Debater Information to Accessibility Requirements")
+                append_data_to_sheet(sheetsService, spreadsheet_id, "Accessibility Requirements", accessibilityRow)
 
             
 
