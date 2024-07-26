@@ -5,8 +5,6 @@ from util import intInput, clear, enter
 
 from loadTournament import load_json_data
 
-from summersplit2024 import spreadsheet_id
-
 tournaments = ["hhss2024", "Exit"]
 options = ["Check Payment", "Transfer Manually Reviewed Payment", "Organize Debaters", "Get TabbyCat Information", "Create Teams","Exit"]
 
