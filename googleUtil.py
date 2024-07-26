@@ -9,8 +9,6 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 import PyPDF2
 
-from summersplit2024 import PDFCHECKMESSAGE, debater_a_name_format, debater_a_email_format, debater_a_level_format, debater_b_email_format, debater_b_level_format, debater_b_name_format, institution_format, accessibility_requirements
-
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive.readonly', 'https://www.googleapis.com/auth/cloud-platform']
 
@@ -38,10 +36,10 @@ def connect():
     
     return build('drive', 'v3', credentials=creds), build('sheets', 'v4', credentials=creds), visionClient
 
-def read_sheet(service, spreadsheet_id, range_name):
+def read_sheet(service, config, range_name):
     # Call the Sheets API to fetch the data
     sheet = service.spreadsheets()
-    result = sheet.values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
+    result = sheet.values().get(spreadsheetId=config['spreadsheet_id'], range=range_name).execute()
     values = result.get('values', [])
 
     if not values:
@@ -129,15 +127,15 @@ def read_pdf(file_path):
         
         return data
 
-def process_files(driveService, link_col, row):
+def process_files(driveService, link_col, row, config):
     
-    filename = 'output.pdf'
+    filename = f"{config['tournament_name']}/output.pdf"
     download_pdf(driveService, row[link_col], filename)
     return read_pdf(filename)
 
-def process_image(visionClient, driveService, link_col, row):
+def process_image(visionClient, driveService, link_col, row, config):
     
-    filename = 'output.png'
+    filename = f"{config['tournament_name']}/output.png"
     download_image(driveService, row[link_col], filename)
     return read_image(filename, visionClient)
 
@@ -171,25 +169,30 @@ def append_data_to_sheet(service, spreadsheet_id, sheet_name, data):
     else:
         print("Duplicate entry. Not adding to sheet.")
 
-def check_payment(sheetsService, spreadsheet_id, driveService, visionClient, data):
-    link_col = data[0].index(PDFCHECKMESSAGE)
+def check_payment(sheetsService, driveService, visionClient, config, data):
+    link_col = data[0].index(config["Payment_Check_Message"])
     for index, row in enumerate(data[1:]):
         print(f"Processing row {index + 1}")
         try:
-            pdfData = process_files(driveService, link_col, row).lower().replace(" ", "")
-            
+            pdfData = process_files(driveService, link_col, row, config).lower().replace(" ", "")
+        
+            #Input Logic Here To Validate Payment
+            #Waiting On Email
+
         except:
             
             try:
                 print("PDF Processing Failed, Attempting To Process Image")
-                imageData = process_image(visionClient, driveService, link_col, row).lower().replace(" ", "")
-            
+                imageData = process_image(visionClient, driveService, link_col, row, config).lower().replace(" ", "")
+                #Input Logic Here To Validate Payment
+                #Waiting On Email
+
             except:
                 print("Image Processing Failed, Manual Inspection Required")
-                append_data_to_sheet(sheetsService, spreadsheet_id, "Review Payment", row)
+                append_data_to_sheet(sheetsService, config['spreadsheet_id'], config["Review_Payment_Sheet"], row)
                 continue
 
-        append_data_to_sheet(sheetsService, spreadsheet_id, "Payment Processed", row)
+        append_data_to_sheet(sheetsService, config['spreadsheet_id'], config["Processed_Payment_Sheet"], row)
 
 def get_cell_background_color(service, spreadsheet_id, sheet_name, range, rgb):
     # Fetch rows from the specified range in the sheet
@@ -222,21 +225,21 @@ def get_cell_background_color(service, spreadsheet_id, sheet_name, range, rgb):
 
     return color_rows
 
-def check_manual(sheetsService, spreadsheet_id, data):
-    green_rows = get_cell_background_color(sheetsService, spreadsheet_id, "Review Payment", f"A2:A{len(data) + 1}", {'green': 1} )
+def check_manual(sheetsService, config, data):
+    green_rows = get_cell_background_color(sheetsService, config['spreadsheet_id'], config["Review_Payment_Sheet"], f"A2:A{len(data) + 1}", {'green': 1} )
     for index, green in enumerate(green_rows):
         if(green):
             print(f"Adding row {index} to processed payments")
-            append_data_to_sheet(sheetsService, spreadsheet_id, "Payment Processed", data[index])
+            append_data_to_sheet(sheetsService, config['spreadsheet_id'], config["Processed_Payment_Sheet"], data[index])
             
-    red_rows = get_cell_background_color(sheetsService, spreadsheet_id, "Review Payment", f"A2:A{len(data) + 1}", {'red': 1} )
+    red_rows = get_cell_background_color(sheetsService, config['spreadsheet_id'], config["Review_Payment_Sheet"], f"A2:A{len(data) + 1}", {'red': 1} )
     for index, red in enumerate(red_rows):
         if(red):
             print(f"Adding row {index} to failed payments")
-            append_data_to_sheet(sheetsService, spreadsheet_id, "Payment Failed", data[index])
+            append_data_to_sheet(sheetsService, config['spreadsheet_id'], config["Payment_Failed_Sheet"], data[index])
             
-def organize_debaters(sheetsService, spreadsheet_id, data):
-    institutionIndex = data[0].index(institution_format)
+def organize_debaters(sheetsService, config, data):
+    institutionIndex = data[0].index(config["institution_format"])
     ANameList = []
     AEmailList = []
     ALevelList = []
@@ -246,39 +249,44 @@ def organize_debaters(sheetsService, spreadsheet_id, data):
     AccessibilityList  = []
     for i in range(1, 10):
         for index, cell in enumerate(data[0]):
-            if(cell.strip() == debater_a_name_format.format(i).strip()):
+            if(cell.strip() == config["debater_a_name_format"].format(i).strip()):
                 ANameList.append(index)
-            elif(cell.strip() == debater_a_email_format.format(i).strip()):
+            elif(cell.strip() == config["debater_a_email_format"].format(i).strip()):
                 AEmailList.append(index)
-            elif(cell.strip() == debater_a_level_format.format(i).strip()):
+            elif(cell.strip() == config["debater_a_level_format"].format(i).strip()):
                 ALevelList.append(index)
-            elif(cell.strip() == debater_b_name_format.format(i).strip()):
+            elif(cell.strip() == config["debater_b_name_format"].format(i).strip()):
                 BNameList.append(index)
-            elif(cell.strip() == debater_b_email_format.format(i).strip()):
+            elif(cell.strip() == config["debater_b_email_format"].format(i).strip()):
                 BEmailList.append(index)
-            elif(cell.strip() == debater_b_level_format.format(i).strip()):
+            elif(cell.strip() == config["debater_b_level_format"].format(i).strip()):
                 BLevelList.append(index)
-            elif(cell.strip() == accessibility_requirements.format(i).strip()):
+            elif(cell.strip() == config["accessibility_requirements"].format(i).strip()):
                 AccessibilityList.append(index)
     for row in data[1:]:
         for index in range(len(ANameList)):
             inputRow = [row[institutionIndex]]
             accessibilityRow = []
+
             if(row[ANameList[index]] == ""):
                 continue
+
             inputRow.append(row[ANameList[index]])
             inputRow.append(row[AEmailList[index]])
             inputRow.append(row[ALevelList[index]])
             inputRow.append(row[BNameList[index]])
             inputRow.append(row[BEmailList[index]])
             inputRow.append(row[BLevelList[index]])
+
             accessibilityRow.append(row[ANameList[index]].strip() + ", " + row[BNameList[index]].strip())
             accessibilityRow.append(row[AccessibilityList[index]])
+
             print(f"Adding {row[ANameList[index]]} and {row[BNameList[index]]} to Debater Information")
-            append_data_to_sheet(sheetsService, spreadsheet_id, "Debater Information", inputRow)
+            
+            append_data_to_sheet(sheetsService, config['spreadsheet_id'], config["Debater_Information_Sheet"], inputRow)
             if row[AccessibilityList[index]] != "" and row[AccessibilityList[index]].lower().strip() != "none" and row[AccessibilityList[index]].lower().strip() != "n/a":
                 print(f"Adding {row[ANameList[index]]} and {row[BNameList[index]]} to Debater Information to Accessibility Requirements")
-                append_data_to_sheet(sheetsService, spreadsheet_id, "Accessibility Requirements", accessibilityRow)
+                append_data_to_sheet(sheetsService, config['spreadsheet_id'], config["Accessibility_Requirements_Sheet"], accessibilityRow)
 
             
 

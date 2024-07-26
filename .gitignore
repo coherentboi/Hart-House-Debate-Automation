@@ -5,6 +5,4 @@ output.pdf
 summersplit2024.py
 venv
 /__pycache__
-teams.json
-institutions.json
-break-categories.json
+/hhss2024
