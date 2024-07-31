@@ -36,10 +36,10 @@ def connect():
     
     return build('drive', 'v3', credentials=creds), build('sheets', 'v4', credentials=creds), visionClient
 
-def read_sheet(service, config, range_name):
+def read_sheet(service, spreadsheet_id, range_name):
     # Call the Sheets API to fetch the data
     sheet = service.spreadsheets()
-    result = sheet.values().get(spreadsheetId=config['spreadsheet_id'], range=range_name).execute()
+    result = sheet.values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
     values = result.get('values', [])
 
     if not values:
@@ -189,10 +189,10 @@ def check_payment(sheetsService, driveService, visionClient, config, data):
 
             except:
                 print("Image Processing Failed, Manual Inspection Required")
-                append_data_to_sheet(sheetsService, config['spreadsheet_id'], config["Review_Payment_Sheet"], row)
+                append_data_to_sheet(sheetsService, config['registration_spreadsheet_id'], config["Review_Payment_Sheet"], row)
                 continue
 
-        append_data_to_sheet(sheetsService, config['spreadsheet_id'], config["Processed_Payment_Sheet"], row)
+        append_data_to_sheet(sheetsService, config['registration_spreadsheet_id'], config["Processed_Payment_Sheet"], row)
 
 def get_cell_background_color(service, spreadsheet_id, sheet_name, range, rgb):
     # Fetch rows from the specified range in the sheet
@@ -226,17 +226,17 @@ def get_cell_background_color(service, spreadsheet_id, sheet_name, range, rgb):
     return color_rows
 
 def check_manual(sheetsService, config, data):
-    green_rows = get_cell_background_color(sheetsService, config['spreadsheet_id'], config["Review_Payment_Sheet"], f"A2:A{len(data) + 1}", {'green': 1} )
+    green_rows = get_cell_background_color(sheetsService, config['registration_spreadsheet_id'], config["Review_Payment_Sheet"], f"A2:A{len(data) + 1}", {'green': 1} )
     for index, green in enumerate(green_rows):
         if(green):
             print(f"Adding row {index} to processed payments")
-            append_data_to_sheet(sheetsService, config['spreadsheet_id'], config["Processed_Payment_Sheet"], data[index])
+            append_data_to_sheet(sheetsService, config['registration_spreadsheet_id'], config["Processed_Payment_Sheet"], data[index])
             
-    red_rows = get_cell_background_color(sheetsService, config['spreadsheet_id'], config["Review_Payment_Sheet"], f"A2:A{len(data) + 1}", {'red': 1} )
+    red_rows = get_cell_background_color(sheetsService, config['registration_spreadsheet_id'], config["Review_Payment_Sheet"], f"A2:A{len(data) + 1}", {'red': 1} )
     for index, red in enumerate(red_rows):
         if(red):
             print(f"Adding row {index} to failed payments")
-            append_data_to_sheet(sheetsService, config['spreadsheet_id'], config["Payment_Failed_Sheet"], data[index])
+            append_data_to_sheet(sheetsService, config['registration_spreadsheet_id'], config["Payment_Failed_Sheet"], data[index])
             
 def organize_debaters(sheetsService, config, data):
     institutionIndex = data[0].index(config["institution_format"])
@@ -265,7 +265,7 @@ def organize_debaters(sheetsService, config, data):
                 AccessibilityList.append(index)
     for row in data[1:]:
         for index in range(len(ANameList)):
-            inputRow = [row[institutionIndex]]
+            inputRow = [row[institutionIndex].strip()]
             accessibilityRow = []
 
             if(row[ANameList[index]] == ""):
@@ -283,10 +283,10 @@ def organize_debaters(sheetsService, config, data):
 
             print(f"Adding {row[ANameList[index]]} and {row[BNameList[index]]} to Debater Information")
             
-            append_data_to_sheet(sheetsService, config['spreadsheet_id'], config["Debater_Information_Sheet"], inputRow)
+            append_data_to_sheet(sheetsService, config['registration_spreadsheet_id'], config["Debater_Information_Sheet"], inputRow)
             if row[AccessibilityList[index]] != "" and row[AccessibilityList[index]].lower().strip() != "none" and row[AccessibilityList[index]].lower().strip() != "n/a":
                 print(f"Adding {row[ANameList[index]]} and {row[BNameList[index]]} to Debater Information to Accessibility Requirements")
-                append_data_to_sheet(sheetsService, config['spreadsheet_id'], config["Accessibility_Requirements_Sheet"], accessibilityRow)
+                append_data_to_sheet(sheetsService, config['registration_spreadsheet_id'], config["Accessibility_Requirements_Sheet"], accessibilityRow)
 
             
 

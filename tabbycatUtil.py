@@ -1,6 +1,8 @@
 import requests
 import json
 
+from openAIUtil import createInstitutionCode
+
 def write_to_file(file_path, data):
     with open(file_path, 'w') as file:
         json.dump(data, file, indent=4) 
@@ -70,10 +72,11 @@ def create_speaker(config, headers, data):
     else:
         print(f"Speaker {data['name'].title()} Creation Failed", response.status_code, response.json())
 
-def create_institution(config, headers, data):
-    response = requests.post(config['tabs_link']+f"/institutions", headers=headers, data=json.dumps(data))
+def create_institution(config, headers, name):
+    code = createInstitutionCode(name)
+    response = requests.post(config['tabs_link']+f"/institutions", headers=headers, data=json.dumps({"name": name, "code": code}))
     if(response.status_code == 200 or response.status_code == 201):
-        print("Institution Created Successfully")
+        print(f"Institution {name}, {code} Created Successfully")
     else:
         print("Institution Creation Failed", response.status_code)
     return response.json()
@@ -101,7 +104,7 @@ def create_teams(config, headers, team_data, team_names):
         creation_data = {}
         institution_name = team[config["institution_column"]]
         if(institution_name.lower() not in institutions.keys()):
-            create_institution(config, headers, {"name": institution_name, "code": institution_name})
+            create_institution(config, headers, institution_name)
             get_institutions(config, headers)
             institutions = read_from_file(f"{config['tournament_name']}/institutions.json")
         creation_data["institution"] = config['tabs_link']+f"/institutions/{institutions[institution_name.lower().strip()]}"

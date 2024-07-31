@@ -38,17 +38,17 @@ def main():
             userChoice = intInput("\nPlease Select an Option: ", 1, len(options))
             clear()
             if(userChoice == 1):
-                formResponseData = read_sheet(sheetsService, config, f"{config['Form_Responses_Sheet']}!A1:ZZ")
+                formResponseData = read_sheet(sheetsService, config['registration_spreadsheet_id'], f"{config['Form_Responses_Sheet']}!A1:ZZ")
                 check_payment(sheetsService, driveService, visionClient, config, formResponseData)
                 print("Checking Payment Completed")
                 enter()
             elif(userChoice == 2):
-                failedPaymentData = read_sheet(sheetsService, config, f"{config['Review_Payment_Sheet']}!A2:ZZ")
+                failedPaymentData = read_sheet(sheetsService, config['registration_spreadsheet_id'], f"{config['Review_Payment_Sheet']}!A2:ZZ")
                 check_manual(sheetsService, config, failedPaymentData)
                 print("Transfered Manually Reviewed Payments")
                 enter()
             elif(userChoice == 3):
-                processed_payments = read_sheet(sheetsService, config, f"{config['Processed_Payment_Sheet']}!A1:ZZ")
+                processed_payments = read_sheet(sheetsService, config['registration_spreadsheet_id'], f"{config['Processed_Payment_Sheet']}!A1:ZZ")
                 organize_debaters(sheetsService, config, processed_payments)
                 print("Compiled Debater Information")
                 enter()
@@ -60,8 +60,8 @@ def main():
                 print("Tabbycat Information Extracted")
                 enter()
             elif(userChoice == 5):
-                debater_information = read_sheet(sheetsService, config, f"{config['Debater_Information_Sheet']}!A1:ZZ")
-                team_names = read_sheet(sheetsService, config, f"{config['Team_Names_Sheet']}!A1:ZZ")
+                debater_information = read_sheet(sheetsService, config['registration_spreadsheet_id'], f"{config['Debater_Information_Sheet']}!A1:ZZ")
+                team_names = read_sheet(sheetsService, config['registration_spreadsheet_id'], f"{config['Team_Names_Sheet']}!A1:ZZ")
                 create_teams(config, tabby_headers, debater_information, team_names)
                 enter()
             else:
