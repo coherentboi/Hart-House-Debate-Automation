@@ -1,16 +1,20 @@
-from googleUtil import connect, read_sheet, check_payment, check_manual, organize_debaters
-from tabbycatUtil import create_teams, get_break_categories, get_institutions, get_speaker_categories, get_teams
+from pyUtilFiles.googleUtil import connect, read_sheet, check_payment, check_manual, organize_debaters
+from pyUtilFiles.tabbycatUtil import create_teams, get_break_categories, get_institutions, get_speaker_categories, get_teams
 
-from util import intInput, clear, enter
+from pyUtilFiles.util import intInput, clear, enter
 
-from loadTournament import load_json_data
+from pyUtilFiles.loadTournament import load_tournament_data, load_tournaments
 
-tournaments = ["hhss2024", "Exit"]
 options = ["Check Payment", "Transfer Manually Reviewed Payment", "Organize Debaters", "Get TabbyCat Information", "Create Teams","Exit"]
 
 def main():
     
     while(True):
+
+        tournaments = load_tournaments()
+
+        tournaments.extend(["Create New Tournament", "Exit"])
+
         print("Welcome to the Hart House Debate Club Tournament Automation Software!\n")
         print("---------------------------------------------------")
         for index, option in enumerate(tournaments):
@@ -21,11 +25,14 @@ def main():
         if(userChoice == len(tournaments)):
             break
         
+        if(userChoice == len(tournaments) - 1):
+            continue
+
         selectedTournament = tournaments[userChoice - 1]
     
         driveService, sheetsService, visionClient = connect()
 
-        config = load_json_data(selectedTournament)
+        config = load_tournament_data(selectedTournament)
 
         tabby_headers = {'Content-Type': 'application/json', "Authorization": f"Token {config['tabs_token']}"}
 

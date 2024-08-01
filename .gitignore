@@ -3,4 +3,5 @@ credentials.json
 token.json
 venv
 /__pycache__
-/hhss2024
+/pyUtilFiles/__pycache__
+/tournaments

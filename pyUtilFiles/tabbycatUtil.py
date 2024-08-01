@@ -1,7 +1,7 @@
 import requests
 import json
 
-from openAIUtil import createInstitutionCode
+from pyUtilFiles.openAIUtil import createInstitutionCode
 
 def write_to_file(file_path, data):
     with open(file_path, 'w') as file:
@@ -18,21 +18,21 @@ def get_institutions(config, headers):
     institutions = {}
     for institution in institution_information:
         institutions[institution["name"].lower()] = institution["id"]
-    write_to_file(f"{config['tournament_name']}/institutions.json", institutions)
+    write_to_file(f"./tournaments/{config['tournament_name']}/institutions.json", institutions)
 
 def get_break_categories(config, headers):
     break_categories_information = requests.get(config['tabs_link']+f"/tournaments/{config['tournament_slug']}/break-categories", headers=headers).json()
     break_categories = {}
     for break_category in break_categories_information:
         break_categories[break_category["name"]] = break_category["id"]
-    write_to_file(f"{config['tournament_name']}/break-categories.json", break_categories)
+    write_to_file(f"./tournaments/{config['tournament_name']}/break-categories.json", break_categories)
 
 def get_speaker_categories(config, headers):
     speaker_categories_information = requests.get(config['tabs_link']+f"/tournaments/{config['tournament_slug']}/speaker-categories", headers=headers).json()
     speaker_categories = {}
     for speaker_category in speaker_categories_information:
         speaker_categories[speaker_category["name"]] = speaker_category["id"]
-    write_to_file(f"{config['tournament_name']}/speaker-categories.json", speaker_categories)
+    write_to_file(f"./tournaments/{config['tournament_name']}/speaker-categories.json", speaker_categories)
 
 def get_teams(config, headers):
     response = requests.get(config['tabs_link']+f"/tournaments/{config['tournament_slug']}/teams", headers=headers)
@@ -40,11 +40,11 @@ def get_teams(config, headers):
         print("Teams Extracted Successfully")
     else:
         print("Team Extraction Failed", response.status_code)
-    write_to_file(f"{config['tournament_name']}/teams.json", response.json())
+    write_to_file(f"./tournaments/{config['tournament_name']}/teams.json", response.json())
 
 def check_team(config, headers, data):
     get_teams(config, headers)
-    teams = read_from_file(f"{config['tournament_name']}/teams.json")
+    teams = read_from_file(f"./tournaments/{config['tournament_name']}/teams.json")
     for team in teams:
         if(team["long_name"] == data["reference"]):
             print(f"Team Already Exists")
@@ -96,7 +96,7 @@ def create_teams(config, headers, team_data, team_names):
     columns = []
     for header in config["debater_information_headers"]:
         columns.append(team_data[0].index(header))
-    institutions = read_from_file(f"{config['tournament_name']}/institutions.json")
+    institutions = read_from_file(f"./tournaments/{config['tournament_name']}/institutions.json")
     if(len(team_names) < len(team_data) - 1):
         print("Not enough team names! Please add more!")
         return
@@ -106,7 +106,7 @@ def create_teams(config, headers, team_data, team_names):
         if(institution_name.lower() not in institutions.keys()):
             create_institution(config, headers, institution_name)
             get_institutions(config, headers)
-            institutions = read_from_file(f"{config['tournament_name']}/institutions.json")
+            institutions = read_from_file(f"./tournaments/{config['tournament_name']}/institutions.json")
         creation_data["institution"] = config['tabs_link']+f"/institutions/{institutions[institution_name.lower().strip()]}"
         creation_data["break_categories"] = configure_break_eligibility(config, team)
         creation_data["reference"] = team_names[index][0]
@@ -117,8 +117,8 @@ def create_teams(config, headers, team_data, team_names):
         if team_info == False:
             continue
         
-        speaker_a_data = {"name": team[config["debater_a_column"]].title(), "email": team[config["email_a_column"]], "team": team_info["url"], "categories": configure_speaker_categories(config, team[config["level_a_column"]])}
-        speaker_b_data = {"name": team[config["debater_b_column"]].title(), "email": team[config["email_b_column"]], "team": team_info["url"], "categories": configure_speaker_categories(config, team[config["level_b_column"]])}
+        speaker_a_data = {"name": team[config["debater_a_column"]].title().strip(), "email": team[config["email_a_column"]].strip(), "team": team_info["url"], "categories": configure_speaker_categories(config, team[config["level_a_column"]])}
+        speaker_b_data = {"name": team[config["debater_b_column"]].title().strip(), "email": team[config["email_b_column"]].strip(), "team": team_info["url"], "categories": configure_speaker_categories(config, team[config["level_b_column"]])}
 
         create_speaker(config, headers, speaker_a_data)
         create_speaker(config, headers, speaker_b_data)

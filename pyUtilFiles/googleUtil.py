@@ -9,27 +9,27 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 import PyPDF2
 
-# If modifying these scopes, delete the file token.json.
+# If modifying these scopes, delete the file ../token.json.
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive.readonly', 'https://www.googleapis.com/auth/cloud-platform']
 
 def connect():
     """Shows basic usage of the Sheets API."""
     creds = None
-    # The file token.json stores the user's access and refresh tokens, and is
+    # The file ../token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
     # time.
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    if os.path.exists('./token.json'):
+        creds = Credentials.from_authorized_user_file('./token.json', SCOPES)
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
+                './credentials.json', SCOPES)
             creds = flow.run_local_server(port=0)
         # Save the credentials for the next run
-        with open('token.json', 'w') as token:
+        with open('./token.json', 'w') as token:
             token.write(creds.to_json())
 
     visionClient = vision.ImageAnnotatorClient(credentials=creds)
@@ -129,13 +129,13 @@ def read_pdf(file_path):
 
 def process_files(driveService, link_col, row, config):
     
-    filename = f"{config['tournament_name']}/output.pdf"
+    filename = f"./tournaments/{config['tournament_name']}/output.pdf"
     download_pdf(driveService, row[link_col], filename)
     return read_pdf(filename)
 
 def process_image(visionClient, driveService, link_col, row, config):
     
-    filename = f"{config['tournament_name']}/output.png"
+    filename = f"./tournaments/{config['tournament_name']}/output.png"
     download_image(driveService, row[link_col], filename)
     return read_image(filename, visionClient)
 
