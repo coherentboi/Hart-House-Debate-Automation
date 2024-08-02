@@ -105,8 +105,6 @@ def read_image(file_path, visionClient):
     if texts:
         # Compile all detected texts into a single string
         compiled_text = " ".join([text.description for text in texts])
-        
-        print('Compiled Text:')
     else:
         print('No text detected.')
 
@@ -126,7 +124,7 @@ def read_pdf(file_path):
             data += page.extract_text()
         
         return data
-
+    
 def process_files(driveService, link_col, row, config):
     
     filename = f"./tournaments/{config['tournament_name']}/output.pdf"
@@ -173,26 +171,43 @@ def check_payment(sheetsService, driveService, visionClient, config, data):
     link_col = data[0].index(config["Payment_Check_Message"])
     for index, row in enumerate(data[1:]):
         print(f"Processing row {index + 1}")
+
+        paymentData = ""
+
         try:
-            pdfData = process_files(driveService, link_col, row, config).lower().replace(" ", "")
-        
-            #Input Logic Here To Validate Payment
-            #Waiting On Email
+            pdfData = process_files(driveService, link_col, row, config).lower().replace(" ", "").replace("\n", "")
+            paymentData += pdfData
 
         except:
             
             try:
                 print("PDF Processing Failed, Attempting To Process Image")
-                imageData = process_image(visionClient, driveService, link_col, row, config).lower().replace(" ", "")
-                #Input Logic Here To Validate Payment
-                #Waiting On Email
+                imageData = process_image(visionClient, driveService, link_col, row, config).lower().replace(" ", "").replace("\n", "")
+                paymentData += imageData
+
 
             except:
                 print("Image Processing Failed, Manual Inspection Required")
                 append_data_to_sheet(sheetsService, config['registration_spreadsheet_id'], config["Review_Payment_Sheet"], row)
                 continue
+        
+        valid = False
 
-        append_data_to_sheet(sheetsService, config['registration_spreadsheet_id'], config["Processed_Payment_Sheet"], row)
+        with open(f"./tournaments/{config['tournament_name']}/paymentInformation/orders.txt", 'r') as orderNumbers, open(f"./tournaments/{config['tournament_name']}/paymentInformation/firstnames.txt", 'r') as firstNames, open(f"./tournaments/{config['tournament_name']}/paymentInformation/lastnames.txt", 'r') as lastNames:
+            for number, first, last in zip(orderNumbers, firstNames, lastNames):
+                if number.strip().lower().replace(" ", "") in paymentData and first.strip().lower().replace(" ", "") in paymentData and last.strip().lower().replace(" ", "") in paymentData:
+                    valid = True
+                    break
+            
+
+        if(valid):
+            print("Proof of Payment Valid, Adding To Sheet")
+            append_data_to_sheet(sheetsService, config['registration_spreadsheet_id'], config["Processed_Payment_Sheet"], row)
+        else:
+            print("Proof of Payment Invalid, Manual Inspection Required")
+            append_data_to_sheet(sheetsService, config['registration_spreadsheet_id'], config["Review_Payment_Sheet"], row)
+
+        
 
 def get_cell_background_color(service, spreadsheet_id, sheet_name, range, rgb):
     # Fetch rows from the specified range in the sheet
